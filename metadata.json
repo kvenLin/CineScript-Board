@@ -1,0 +1,5 @@
+{
+  "name": "CineScript-Board AI",
+  "description": "A professional AI-powered storyboard assistant that generates creative scripts and high-fidelity keyframe visualizations using Gemini 3 Pro models.",
+  "requestFramePermissions": []
+}
