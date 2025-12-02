@@ -331,6 +331,7 @@ export const editSceneImage = async (
   originalImageBase64: string,
   editInstruction: string,
   resolution: ImageResolution,
+  referenceImagesBase64?: string[],
   apiKey?: string
 ): Promise<string> => {
   const ai = getAiClient(apiKey);
@@ -342,20 +343,37 @@ export const editSceneImage = async (
     const match = originalImageBase64.match(/data:([^;]+);base64,/);
     if (match) mimeType = match[1];
 
+    const parts: any[] = [
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType,
+        },
+      },
+    ];
+
+    if (referenceImagesBase64 && referenceImagesBase64.length > 0) {
+      for (const refImg of referenceImagesBase64) {
+        const refBase64 = refImg.split(',')[1] || refImg;
+        let refMimeType = 'image/png';
+        const match = refImg.match(/data:([^;]+);base64,/);
+        if (match) refMimeType = match[1];
+
+        parts.push({
+          inlineData: {
+            data: refBase64,
+            mimeType: refMimeType,
+          },
+        });
+      }
+    }
+
+    parts.push({ text: `${editInstruction} Maintain consistency with provided reference image(s) if any.` });
+
     const response = await ai.models.generateContent({
       model: modelId,
       contents: {
-        parts: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: editInstruction,
-          },
-        ],
+        parts,
       },
       config: {
           imageConfig: {

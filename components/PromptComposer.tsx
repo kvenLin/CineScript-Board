@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, Sparkles, Square, Upload, Wand2, X } from 'lucide-react';
+import { Loader2, Sparkles, Square, Wand2 } from 'lucide-react';
 import { TranslationStrings } from '../i18n';
 import { ImageResolution } from '../types';
 
@@ -14,11 +14,6 @@ interface PromptComposerProps {
   onStopScript: () => void;
   resolution: ImageResolution;
   onResolutionChange: (res: ImageResolution) => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onOpenFilePicker: () => void;
-  referenceImages: string[];
-  onRemoveReferenceImage: (index: number) => void;
 }
 
 const PromptComposer: React.FC<PromptComposerProps> = ({
@@ -32,11 +27,6 @@ const PromptComposer: React.FC<PromptComposerProps> = ({
   onStopScript,
   resolution,
   onResolutionChange,
-  fileInputRef,
-  onImageUpload,
-  onOpenFilePicker,
-  referenceImages,
-  onRemoveReferenceImage,
 }) => {
   const isPromptEmpty = !prompt.trim();
 
@@ -105,36 +95,6 @@ const PromptComposer: React.FC<PromptComposerProps> = ({
           </div>
         </div>
 
-        <div className="border-t border-slate-800 bg-slate-950/30 rounded-b-xl px-4 py-3 flex items-center gap-4 overflow-x-auto min-h-[80px]">
-          <div className="flex-shrink-0">
-            <input type="file" ref={fileInputRef} multiple accept="image/*" className="hidden" onChange={onImageUpload} />
-            <button
-              onClick={onOpenFilePicker}
-              className="w-16 h-16 border border-dashed border-slate-700 rounded-lg flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-purple-400 hover:border-purple-500/50 hover:bg-slate-900 transition-all group"
-            >
-              <Upload className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              <span className="text-[9px] uppercase font-bold tracking-wider">{t.refsButton}</span>
-            </button>
-          </div>
-
-          {referenceImages.length === 0 ? (
-            <span className="text-slate-600 text-xs italic">{t.uploadRefsHint}</span>
-          ) : (
-            <div className="flex items-center gap-3">
-              {referenceImages.map((img, idx) => (
-                <div key={idx} className="relative group w-16 h-16 flex-shrink-0">
-                  <img src={img} alt={`Ref ${idx}`} className="w-full h-full object-cover rounded-lg border border-slate-700" />
-                  <button
-                    onClick={() => onRemoveReferenceImage(idx)}
-                    className="absolute -top-1.5 -right-1.5 bg-slate-900 text-slate-400 hover:text-red-400 rounded-full p-0.5 border border-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </section>
   );

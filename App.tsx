@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, ArrowDown } from 'lucide-react';
+import { Loader2, ArrowDown, Images } from 'lucide-react';
 import { StoryboardData, GeneratedImage, ImageResolution, Scene, SelectionBox } from './types';
 import * as GeminiService from './services/geminiService';
 // @ts-ignore
@@ -12,6 +12,9 @@ import PromptComposer from './components/PromptComposer';
 import StoryboardToolbar from './components/StoryboardToolbar';
 import SceneCard from './components/SceneCard';
 import ContinueSection from './components/ContinueSection';
+import ReferencePanel from './components/ReferencePanel';
+
+const LOCAL_STORAGE_KEY = 'cinescript_api_key';
 
 const App: React.FC = () => {
   // Detect browser language
@@ -43,6 +46,7 @@ const App: React.FC = () => {
   // Character Consistency State (Array of base64 strings)
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isReferencePanelOpen, setIsReferencePanelOpen] = useState<boolean>(false);
 
   // Edit Mode State (uses scene index)
   const [editingSceneIndex, setEditingSceneIndex] = useState<number | null>(null);
@@ -65,6 +69,13 @@ const App: React.FC = () => {
   // Check API Key on mount
   useEffect(() => {
     if (process.env.API_KEY) {
+        setApiKeyReady(true);
+        return;
+    }
+
+    const storedKey = typeof window !== 'undefined' ? window.localStorage.getItem(LOCAL_STORAGE_KEY) : null;
+    if (storedKey) {
+        setCustomApiKey(storedKey);
         setApiKeyReady(true);
     }
   }, []);
@@ -110,6 +121,9 @@ const App: React.FC = () => {
   const saveManualKey = (key: string) => {
       if (key.trim()) {
           setCustomApiKey(key.trim());
+          if (typeof window !== 'undefined') {
+              window.localStorage.setItem(LOCAL_STORAGE_KEY, key.trim());
+          }
           setApiKeyReady(true);
           setShowKeyModal(false);
       }
@@ -118,6 +132,10 @@ const App: React.FC = () => {
   const handleSkipKeySetup = () => {
       setApiKeyReady(true);
       setShowKeyModal(false);
+  };
+
+  const handleOpenFilePicker = () => {
+      fileInputRef.current?.click();
   };
 
   const handleEnhancePrompt = async () => {
@@ -432,7 +450,13 @@ const App: React.FC = () => {
           // Construct an instruction that helps the model understand the intent based on the "selection"
           const instruction = `${editPrompt}`; 
           
-          const newImageUrl = await GeminiService.editSceneImage(originalImageUrl, instruction, resolution, customApiKey);
+          const newImageUrl = await GeminiService.editSceneImage(
+              originalImageUrl,
+              instruction,
+              resolution,
+              referenceImages,
+              customApiKey
+          );
           
           setGeneratedImages(prev => ({
               ...prev,
@@ -528,11 +552,6 @@ const App: React.FC = () => {
           onStopScript={handleStopScript}
           resolution={resolution}
           onResolutionChange={setResolution}
-          fileInputRef={fileInputRef}
-          onImageUpload={handleImageUpload}
-          onOpenFilePicker={() => fileInputRef.current?.click()}
-          referenceImages={referenceImages}
-          onRemoveReferenceImage={removeReferenceImage}
         />
 
         {/* Results Section */}
@@ -604,6 +623,32 @@ const App: React.FC = () => {
         )}
 
       </main>
+
+      {/* Floating Reference Panel Trigger */}
+      <button
+        onClick={() => setIsReferencePanelOpen(prev => !prev)}
+        className="fixed bottom-6 right-6 z-30 flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900 border border-slate-800 text-slate-200 shadow-xl hover:border-purple-500/50 hover:text-white hover:bg-slate-900/90 transition-all"
+        aria-pressed={isReferencePanelOpen}
+      >
+        <Images className="w-5 h-5 text-purple-300" />
+        <span className="text-sm font-semibold">{t.refsButton}</span>
+        {referenceImages.length > 0 && (
+          <span className="text-xs font-bold bg-purple-600/30 text-purple-200 px-2 py-0.5 rounded-full border border-purple-500/40">
+            {referenceImages.length}
+          </span>
+        )}
+      </button>
+
+      <ReferencePanel
+        isOpen={isReferencePanelOpen}
+        onClose={() => setIsReferencePanelOpen(false)}
+        referenceImages={referenceImages}
+        onRemoveReferenceImage={removeReferenceImage}
+        fileInputRef={fileInputRef}
+        onImageUpload={handleImageUpload}
+        onOpenFilePicker={handleOpenFilePicker}
+        t={t}
+      />
     </div>
   );
 };
